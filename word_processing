@@ -1,0 +1,324 @@
+#pragma once
+
+#include<iostream>
+#include<fstream>
+#include<string>
+#include<vector>
+#include<map>
+
+#include "Heap.h"
+
+using namespace std;
+
+class word{
+    public:
+        string str;
+        int count;
+
+        word(){
+            str = "";
+            count = 1;
+        }
+        word(string a){
+            str = a;
+            count = 1;
+        }
+        word(string a, int c){
+            str = a;
+            count = c;
+        }
+        word(const word &w){
+            str = w.str;
+            count = w.count;
+        }
+
+        bool operator>(word rhs){
+            return (count > rhs.count);
+        }
+        bool operator<(word rhs){
+            return (count < rhs.count);
+        }
+        bool operator==(word rhs){
+            return (count == rhs.count);
+        }
+        bool operator!=(word rhs){
+            return (count != rhs.count);
+        }
+
+        void inc(){
+            count++;
+        }
+};
+
+class wordtable{
+    private:
+        vector<word> words;
+        vector<word> heap;
+        map<string, int> hash;
+
+    public:
+        wordtable(){}
+        wordtable(const wordtable &w){
+            words = w.words;
+            hash = w.hash;
+        }
+
+        void insert(string w, int c = 1){
+            word new_word(w, c);
+            words.push_back(new_word);
+            int index = words.size() - 1;
+            hash.insert(pair<string, int> (w, index));
+        }
+
+        void rem(string w){
+            int to_del = hash.at(w);
+            swap(words[to_del], words[words.size() - 1]);
+            words.pop_back();
+            hash.erase(w);
+            w = words[0].str;
+            hash.erase(w);
+            hash.insert(pair<string, int> (w, 0));
+        }
+
+        word search(string w){
+            if(hash.find(w) == hash.end()) return word(w, 0);
+            int to_find = hash.at(w);
+            return words[to_find];
+        }
+
+        void pop(){
+            swap(heap[0], heap[heap.size() - 1]);
+            heap.pop_back();
+            downheap_word();
+        }
+
+        bool check(string w){
+            if(hash.find(w) != hash.end()) return true;
+            return false;
+        }
+
+        void inc_count(string w){
+            int to_inc = hash.at(w);
+            words[to_inc].inc();
+        }
+
+        vector<string> front(){
+            vector<string> ret;
+            ret.push_back(heap[0].str);
+            ret.push_back(to_string(heap[0].count));
+
+            return ret;
+        }
+
+        int word_count(){
+            return words.size();
+        }
+
+        bool Isempty(){
+            if(words.size() == 0) return true;
+            return false;
+        }
+
+        void downheap_word(){
+            downheap(heap, heap.size());
+        }
+
+        void heapify_word(){
+            heap = words;
+            for(int i = (heap.size()/2)-1 ; i>=0 ; i--){
+                downheap(heap, heap.size(), i);
+            }
+        }
+};
+
+class gametable{
+    private:
+        vector<wordtable> table;
+        map<string, int> hash;
+
+    public:
+        gametable(){}
+        gametable(const gametable &g){
+            table = g.table;
+            hash = g.hash;
+        }
+        
+        void insert(string g, string w, int c = 1){
+            int index;
+
+            if(hash.find(g) == hash.end()){
+                wordtable words;
+                table.push_back(words);
+                index = table.size() - 1;
+                hash.insert(pair<string, int> (g, index));
+            }
+            else index = hash.at(g);      
+
+            if(table[index].check(w)) table[index].inc_count(w);
+            else table[index].insert(w, c);                  
+        }
+
+        wordtable search(string g){
+            wordtable ret;
+
+            if(hash.find(g) != hash.end()){
+                int index = hash.at(g);
+                ret = table[index];
+            }
+
+            return ret;
+        }
+        
+       
+};
+
+
+
+const int TABLE_SIZE = 86;
+
+class Node{
+	
+public:	
+	long long int data;
+	string key;
+	Node* next;
+	
+	
+		Node(){
+			data=0;
+			key="0";
+			next=NULL;
+		}
+
+
+};
+
+class Gamehashing{
+	
+	Node** hashtable;
+	
+public:
+	
+	Gamehashing(){
+		hashtable=new Node*[TABLE_SIZE];
+		
+		for(int i=0;i<TABLE_SIZE;i++){
+			hashtable[i]=NULL;
+		}
+	}
+
+
+int HashF(string key)	{
+	
+	int hash;
+	for(int i=0;i<key.size();i++){
+		
+		hash+=key[i];
+	}
+	
+	return hash % TABLE_SIZE;
+}
+	
+void insert(string k,long long int val){
+	
+	int hash=HashF(k);
+	
+	Node* prev=NULL;
+	
+	Node* ptr=hashtable[hash];
+	
+	while(ptr!=NULL){
+		prev=ptr;
+		ptr=ptr->next;
+	}
+	
+	ptr=new Node();
+	ptr->data=val;
+	ptr->key=k;
+	
+	if(prev==NULL){
+		hashtable[hash]=ptr;
+	}
+	else{
+		prev->next=ptr;
+	}
+		
+}
+
+long int Search(string key){
+	
+	int hash=HashF(key);
+	
+	Node* temp=hashtable[hash];
+	
+	if(temp==NULL){
+		cout<<"Table is empty"<<endl;
+		return INT_MIN;
+	}
+	while(temp!=NULL){
+		if(temp->key==key){
+			return temp->data;
+		}
+		temp=temp->next;
+	}
+	
+	return -1;
+	
+}
+
+void deleteH(string key){
+	
+	int hash=HashF(key);
+	
+	Node* prev=NULL;
+	Node* temp=hashtable[hash];
+	
+	if(temp==NULL){
+		cout<<"Entry not found"<<endl;
+		return;
+	}
+	
+	while(temp!=NULL){
+		
+		if(temp->key==key){
+			if(prev==NULL){
+			
+			free(temp);
+			temp=NULL;
+			hashtable[hash]=NULL;
+			return;
+		}
+		else{
+			prev->next=temp->next;
+			delete temp;
+			temp=NULL;
+			return;
+		}
+	}
+		prev=temp;
+		temp=temp->next;
+		
+	}
+	
+}
+
+void deleteTable(){
+	
+	for(int i=0;i<TABLE_SIZE;i++){
+		
+		Node* temp=hashtable[i];
+		while(temp!=NULL){
+			Node* prev=temp;
+			temp=temp->next;
+			delete prev;
+		}
+	}
+	
+	delete [] hashtable;
+}
+
+
+
+
+	
+};
